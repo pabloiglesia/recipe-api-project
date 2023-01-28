@@ -1,7 +1,7 @@
 """
 Sample tests
 """
-from django.test  import SimpleTestCase
+from django.test import SimpleTestCase
 
 from app import calc
 

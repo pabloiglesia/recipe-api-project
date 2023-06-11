@@ -127,3 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.recipees_api/pyvenv.cfg
+.recipees_api/bin/activate
+.recipees_api/bin/activate.csh
+.recipees_api/bin/activate.fish
+.recipees_api/bin/Activate.ps1
+.recipees_api/bin/django-admin
+.recipees_api/bin/pip
+.recipees_api/bin/pip3
+.recipees_api/bin/pip3.11
+.recipees_api/bin/python
+.recipees_api/bin/python3
+.recipees_api/bin/python3.11
+.recipees_api/bin/sqlformat

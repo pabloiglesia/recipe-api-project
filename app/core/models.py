@@ -22,6 +22,13 @@ def recipe_image_file_path(instance, filename):
     return os.path.join('uploads', 'recipe', filename)
 
 
+class NameField(models.CharField):
+    # Ensure valid values will always be using just lowercase
+    def get_prep_value(self, value):
+        value = super().get_prep_value(value)
+        return value if value is None else value.lower()
+
+
 class UserManager(BaseUserManager):
     """Manager for users."""
 
@@ -79,7 +86,7 @@ class Recipe(models. Model):
 class Tag(models.Model):
     """Tag for filtering recipes."""
 
-    name = models.CharField(max_length=255)
+    name = NameField(max_length=255)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -92,7 +99,7 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     """Ingredient for recipes."""
 
-    name = models.CharField(max_length=255)
+    name = NameField(max_length=255)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

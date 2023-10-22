@@ -70,6 +70,7 @@ class PrivateTagsApiTests(TestCase):
         user2 = create_user(email='user2@example.com')
         Tag.objects.create(user=user2, name='Fruity')
         tag = Tag.objects.create(user=self.user, name='Comfort Food')
+        tag.refresh_from_db()
 
         res = self.client.get(TAGS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -89,7 +90,7 @@ class PrivateTagsApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         tag.refresh_from_db()
-        self.assertEqual(tag.name, payload['name'])
+        self.assertEqual(tag.name, payload['name'].lower())
 
     def test_delete_tag(self):
         """Test deleting a tag."""
@@ -105,8 +106,8 @@ class PrivateTagsApiTests(TestCase):
 
     def test_filter_tags_assigned_to_recipes(self):
         """Test listing tags to those assigned to recipes."""
-        tag1 = Tag.objects.create(user=self.user, name='Breakfast')
-        tag2 = Tag.objects.create(user=self.user, name='Lunch')
+        tag1 = Tag.objects.create(user=self.user, name='breakfast')
+        tag2 = Tag.objects.create(user=self.user, name='bunch')
         recipe = Recipe.objects.create(
             title='Green Eggs on Toast',
             time_minutes=10,
@@ -144,3 +145,12 @@ class PrivateTagsApiTests(TestCase):
         res = self.client.get(TAGS_URL, {'assigned_only': 1})
 
         self.assertEqual(len(res.data), 1)
+
+    def test_tags_not_cas_sensitive(self):
+        """Test that Tags are not Case Sensitive."""
+        Tag.objects.create(user=self.user, name='Breakfast')
+        Tag.objects.get_or_create(user=self.user, name='breaKfast')
+
+        tags = Tag.objects.all()
+
+        self.assertEqual(len(tags), 1)

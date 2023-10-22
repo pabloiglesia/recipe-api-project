@@ -72,6 +72,7 @@ class PrivateIngredientsApiTests(TestCase):
         ingredient = Ingredient.objects.create(
             user=self.user,
             name='Comfort Food')
+        ingredient.refresh_from_db()
 
         res = self.client.get(INGREDIENTS_URL)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -93,7 +94,7 @@ class PrivateIngredientsApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         ingredient.refresh_from_db()
-        self.assertEqual(ingredient.name, payload['name'])
+        self.assertEqual(ingredient.name, payload['name'].lower())
 
     def test_delete_ingredient(self):
         """Test deleting a ingredient."""
@@ -111,8 +112,8 @@ class PrivateIngredientsApiTests(TestCase):
 
     def test_filter_ingredients_assigned_to_recipes(self):
         """Test listing ingedients to those assigned to recipes."""
-        in1 = Ingredient.objects.create(user=self.user, name='Apples')
-        in2 = Ingredient.objects.create(user=self.user, name='Turkey')
+        in1 = Ingredient.objects.create(user=self.user, name='apples')
+        in2 = Ingredient.objects.create(user=self.user, name='turkey')
         recipe = Recipe.objects.create(
             title='Apple Crumble',
             time_minutes=5,
@@ -150,3 +151,12 @@ class PrivateIngredientsApiTests(TestCase):
         res = self.client.get(INGREDIENTS_URL, {'assigned_only': 1})
 
         self.assertEqual(len(res.data), 1)
+
+    def test_ingredients_not_case_sensitive(self):
+        """Test that Ingrediente are not Case Sensitive."""
+        Ingredient.objects.create(user=self.user, name='Eggs')
+        Ingredient.objects.get_or_create(user=self.user, name='egGs')
+
+        ingredients = Ingredient.objects.all()
+
+        self.assertEqual(len(ingredients), 1)

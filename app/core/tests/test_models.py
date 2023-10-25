@@ -102,6 +102,22 @@ class ModelTests(TestCase):
 
         self.assertEqual(str(ingredient), ingredient.name)
 
+    def test_create_recipe_ingredient(self):
+        """Test creating a Recipe ingredient is successful."""
+        user = create_user()
+        ingredient = create_ingredient(user, 'rice')
+        recipe = create_recipe(user)
+        quantity = '1 cup'
+        recipe_ingredient = models.RecipeIngredient.objects.create(
+            recipe=recipe,
+            ingredient=ingredient,
+            quantity=quantity)
+
+        self.assertEqual(
+            str(recipe_ingredient),
+            f'{recipe_ingredient.quantity}_{recipe_ingredient.ingredient.name}'
+        )
+
     @patch('core.models.uuid.uuid4')
     def test_recipe_file_name_uuid(self, mock_uuid):
         """test generating image path."""

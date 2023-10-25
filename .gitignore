@@ -140,3 +140,4 @@ dmypy.json
 .recipees_api/bin/python3
 .recipees_api/bin/python3.11
 .recipees_api/bin/sqlformat
+.vscode/settings.json

@@ -16,6 +16,7 @@ from rest_framework.test import APIClient
 
 from core.models import (
     Recipe,
+    RecipeIngredient,
     Tag,
     Ingredient,
 )
@@ -314,7 +315,10 @@ class PrivateRecipeApiTests(TestCase):
             'time_minutes': 60,
             'price': Decimal('4.30'),
             'tags': [],
-            'ingredients': [{'name': 'Couliflower'}, {'name': 'Salt'}]
+            'ingredients': [
+                {'ingredient': {'name': 'Couliflower'}, 'quantity': '1'},
+                {'ingredient': {'name': 'Salt'}, 'quantity': 'A pinch'}
+            ]
         }
         res = self.client.post(RECIPES_URL, payload, format='json')
 
@@ -325,8 +329,8 @@ class PrivateRecipeApiTests(TestCase):
         self.assertEqual(recipe.ingredients.count(), 2)
         for ingredient in payload['ingredients']:
             exists = recipe.ingredients.filter(
-                name=ingredient['name'],
-                user=self.user,
+                ingredient__name=ingredient['ingredient']['name'],
+                ingredient__user=self.user,
             ).exists()
             self.assertTrue(exists)
 
@@ -340,7 +344,10 @@ class PrivateRecipeApiTests(TestCase):
             'time_minutes': 25,
             'price': Decimal('2.55'),
             'tags': [],
-            'ingredients': [{'name': 'Lemon'}, {'name': 'Fish Sauce'}],
+            'ingredients': [
+                {'ingredient': {'name': 'Lemon'}, 'quantity': '1'},
+                {'ingredient': {'name': 'Fish Sauce'}, 'quantity': 'A pinch'},
+            ],
         }
         res = self.client.post(RECIPES_URL, payload, format='json')
 
@@ -349,46 +356,66 @@ class PrivateRecipeApiTests(TestCase):
         self.assertEqual(recipes.count(), 1)
         recipe = recipes[0]
         self.assertEqual(recipe.ingredients.count(), 2)
-        self.assertIn(ingredient_indian, recipe.ingredients.all())
+        ingredient_indian_exists = False
         for ingredient in payload['ingredients']:
+            if not ingredient_indian_exists:
+                ingredient_indian_exists = ingredient['ingredient']['name'] \
+                    == ingredient_indian.name
             exists = recipe.ingredients.filter(
-                name=ingredient['name'],
-                user=self.user,
+                ingredient__name=ingredient['ingredient']['name'],
+                ingredient__user=self.user,
             ).exists()
             self.assertTrue(exists)
+
+        self.assertTrue(ingredient_indian_exists)
 
     def test_create_ingredient_on_update(self):
         """Test creating ingredient when updating a recipe"""
         recipe = create_recipe(user=self.user)
 
-        payload = {'ingredients': [{'name': 'Limes'}]}
+        payload = {'ingredients': [
+            {'ingredient': {'name': 'Limes'}, 'quantity': '2'},
+        ]}
         url = detail_url(recipe.id)
 
         res = self.client.patch(url, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        new_ingredient = Ingredient.objects.get(user=self.user, name='Limes')
+        new_ingredient = RecipeIngredient.objects.get(
+            ingredient__user=self.user, ingredient__name='Limes')
         self.assertIn(new_ingredient, recipe.ingredients.all())
 
     def test_update_recipe_assign_ingredient(self):
         """Test assigning an existing ingredient when updating a recipe."""
         ingredient_breakfast = Ingredient.objects.create(
             user=self.user,
-            name='Pepper'
+            name='pepper'
+        )
+        recipe_ingredient_breakfast = RecipeIngredient.objects.create(
+            ingredient=ingredient_breakfast,
+            quantity='1'
         )
         recipe = create_recipe(user=self.user)
-        recipe.ingredients.add(ingredient_breakfast)
+        recipe.ingredients.add(recipe_ingredient_breakfast)
 
         ingredient_lunch = Ingredient.objects.create(
             user=self.user,
-            name='Chili'
+            name='chili'
         )
-        payload = {'ingredients': [{'name': 'Chili'}]}
+
+        payload = {'ingredients': [
+            {'ingredient': {'name': 'chili'}, 'quantity': '1'}
+        ]}
         url = detail_url(recipe.id)
         res = self.client.patch(url, payload, format='json')
 
+        recipe_ingredient_lunch, created = RecipeIngredient.objects \
+            .get_or_create(
+                ingredient=ingredient_lunch,
+                quantity='1'
+            )
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(ingredient_lunch, recipe.ingredients.all())
-        self.assertNotIn(ingredient_breakfast, recipe.ingredients.all())
+        self.assertIn(recipe_ingredient_lunch, recipe.ingredients.all())
+        self.assertNotIn(recipe_ingredient_breakfast, recipe.ingredients.all())
 
     def test_clear_recipe_ingredients(self):
         """Test clearing a recipes ingredients."""
@@ -396,8 +423,12 @@ class PrivateRecipeApiTests(TestCase):
             user=self.user,
             name='Garlic'
             )
+        recipe_ingredient = RecipeIngredient.objects.create(
+            ingredient=ingredient,
+            quantity='1'
+        )
         recipe = create_recipe(user=self.user)
-        recipe.ingredients.add(ingredient)
+        recipe.ingredients.add(recipe_ingredient)
 
         payload = {'ingredients': []}
         url = detail_url(recipe.id)
@@ -432,8 +463,16 @@ class PrivateRecipeApiTests(TestCase):
         r2 = create_recipe(user=self.user, title='Chicken Cacciatore')
         in1 = Ingredient.objects.create(user=self.user, name='Feta Cheese')
         in2 = Ingredient.objects.create(user=self.user, name='Chicken')
-        r1.ingredients.add(in1)
-        r2.ingredients.add(in2)
+        recipe_ingredient1 = RecipeIngredient.objects.create(
+            ingredient=in1,
+            quantity='1'
+        )
+        recipe_ingredient2 = RecipeIngredient.objects.create(
+            ingredient=in2,
+            quantity='1'
+        )
+        r1.ingredients.add(recipe_ingredient1)
+        r2.ingredients.add(recipe_ingredient2)
         r3 = create_recipe(user=self.user, title='Red Lentil Daal')
 
         params = {'ingredients': f'{in1.id},{in2.id}'}

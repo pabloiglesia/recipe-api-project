@@ -14,6 +14,7 @@ from rest_framework.test import APIClient
 from core.models import (
     Ingredient,
     Recipe,
+    RecipeIngredient
 )
 
 from recipe.serializers import IngredientSerializer
@@ -114,13 +115,18 @@ class PrivateIngredientsApiTests(TestCase):
         """Test listing ingedients to those assigned to recipes."""
         in1 = Ingredient.objects.create(user=self.user, name='apples')
         in2 = Ingredient.objects.create(user=self.user, name='turkey')
+        recipe_ingredient1 = RecipeIngredient.objects.create(
+            ingredient=in1,
+            quantity='1'
+        )
+
         recipe = Recipe.objects.create(
             title='Apple Crumble',
             time_minutes=5,
             price=Decimal('4.50'),
             user=self.user,
         )
-        recipe.ingredients.add(in1)
+        recipe.ingredients.add(recipe_ingredient1)
 
         res = self.client.get(INGREDIENTS_URL, {'assigned_only': 1})
 
@@ -133,6 +139,10 @@ class PrivateIngredientsApiTests(TestCase):
         """Test filtered ingredients returns a unique list."""
         ing = Ingredient.objects.create(user=self.user, name='Eggs')
         Ingredient.objects.create(user=self.user, name='Lentils')
+        recipe_ingredient = RecipeIngredient.objects.create(
+            ingredient=ing,
+            quantity='1'
+        )
         recipe1 = Recipe.objects.create(
             title='Eggs Benedict',
             time_minutes=60,
@@ -145,8 +155,8 @@ class PrivateIngredientsApiTests(TestCase):
             price=Decimal('4.00'),
             user=self.user,
         )
-        recipe1.ingredients.add(ing)
-        recipe2.ingredients.add(ing)
+        recipe1.ingredients.add(recipe_ingredient)
+        recipe2.ingredients.add(recipe_ingredient)
 
         res = self.client.get(INGREDIENTS_URL, {'assigned_only': 1})
 

@@ -115,7 +115,7 @@ class RecipeIngredient(models.Model):
         'Ingredient',
         on_delete=models.CASCADE,
     )
-    quantity = models.CharField(max_length=255)
+    quantity = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return f'{self.quantity}_{self.ingredient}'

@@ -485,6 +485,26 @@ class PrivateRecipeApiTests(TestCase):
         self.assertIn(s2.data, res.data)
         self.assertNotIn(s3.data, res.data)
 
+    def test_create_recipe_ingredient_quantity_not_mandatory(self):
+        """Test creating a recipe with existing ingredient."""
+        payload = {
+            'title': 'Vietnamese Soup',
+            'time_minutes': 25,
+            'price': Decimal('2.55'),
+            'tags': [],
+            'ingredients': [
+                {'ingredient': {'name': 'Lemon'}},
+                {'ingredient': {'name': 'Fish Sauce'}, 'quantity': 'A pinch'},
+            ],
+        }
+        res = self.client.post(RECIPES_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipes = Recipe.objects.filter(user=self.user)
+        self.assertEqual(recipes.count(), 1)
+        recipe = recipes[0]
+        self.assertEqual(recipe.ingredients.count(), 2)
+
 
 class ImageUploadTests(TestCase):
     """Tests for the image upload API."""
